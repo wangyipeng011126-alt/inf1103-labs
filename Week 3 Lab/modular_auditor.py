@@ -3,28 +3,23 @@ MAX_CAPACITY = 500
 TAX_RATE = 0.1  # 10% tax rate
 
 
-def get_valid_input(failed_entries):
+def get_valid_input():
     while True:
         user_input = input("Enter stock quantity or 'quit': ")
 
         if user_input == "quit":
             print("Exiting the program.")
-            return "quit", failed_entries
+            return "quit"
 
         if user_input.startswith("-") and user_input[1:].isdigit():
             print("Error: Negative stock is not allowed.")
-            failed_entries += 1
-            print("Number of Failed/Rejected Entries for negative stock:", failed_entries)
-            continue
+            return None
 
         if not user_input.isdigit():
             print("Error: Invalid input.")
-            failed_entries += 1
-            print("Number of Failed/Rejected Entries for invalid input:", failed_entries)
-            continue
-        
+            return None
 
-        return user_input, failed_entries
+        return user_input
 
 
 def process_delivery(current_total, new_value):
@@ -34,14 +29,10 @@ def process_delivery(current_total, new_value):
     print("New stock added:", new_value)
     print("Total Inventory:", new_total)
 
-    if new_total > MAX_CAPACITY:
-        print("ALERT: Overstock! Inventory exceeds 500 units.")
-
     return new_total
 
 
 def calculate_tax(amount):
-    print("Calculating tax for total inventory:", amount)
     return amount * TAX_RATE
 
 
@@ -57,17 +48,21 @@ def main():
     exit_program = False
 
     while not exit_program:
-
-        # Get both the user input AND updated failed_entries
-        user_input_stock, failed_entries = get_valid_input(failed_entries)
+        user_input_stock = get_valid_input()
 
         if user_input_stock == "quit":
             generate_report(inventory, failed_entries)
             exit_program = True
-
+        elif user_input_stock is None:
+            failed_entries += 1
         else:
             inventory = process_delivery(inventory, int(user_input_stock))
             tax_amount = calculate_tax(inventory)
+            print("Tax Amount is :", tax_amount)
+
+            if inventory > MAX_CAPACITY:
+                print("ALERT: Overstock! Inventory exceeds 500 units.")
+                exit_program = True
 
 
 # Program Entry Point
