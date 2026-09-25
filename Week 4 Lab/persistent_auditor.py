@@ -27,7 +27,7 @@ def load_inventory():
             return inventory
 
     except FileNotFoundError:
-        print("No previous records found! Starting with an empty inventory.")
+        print("No previous inventory found. Starting fresh.")
         return []
 
 
@@ -68,8 +68,10 @@ def generate_report(total_units, failed_entries):
 
 
 def main():
+    # Required variables
     inventory = 0
     transaction_history = []
+
     failed_entries = 0
     exit_program = False
 
@@ -77,12 +79,11 @@ def main():
     transaction_history = load_inventory()
 
 
-
     print("\nCurrent Inventory:")
     print("")
+
     for item in transaction_history:
         item_id, product_name, quantity = item
-
         print(
             f"{item_id}, {product_name}, {quantity}"
         )
@@ -103,6 +104,22 @@ def main():
             exit_program = True
 
         else:
+            # Generate the next inventory ID
+            if not transaction_history:
+                item_id = 1001
+            else:
+                item_id = max(
+                    item[0] for item in transaction_history
+                ) + 1
+
+            # Add order to transaction history
+            transaction_history.append(
+                (item_id, product_name, quantity)
+            )
+
+            # Update inventory total
+            inventory += quantity
+
             # Check maximum capacity
             if inventory > MAX_CAPACITY:
                 print(
