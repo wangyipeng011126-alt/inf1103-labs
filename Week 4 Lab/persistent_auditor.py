@@ -5,7 +5,12 @@ INVENTORY_FILE = "inventory.txt"
 
 
 def load_inventory():
-    """Read the saved inventory from the file."""
+    """Read the saved inventory from the file.
+
+    Returns:
+        list: A list containing inventory records.
+        If the file does not exist, return an empty list.
+    """
     try:
         with open(INVENTORY_FILE, "r") as f:
             inventory = []
@@ -29,6 +34,20 @@ def load_inventory():
     except FileNotFoundError:
         print("No previous inventory found. Starting fresh.")
         return []
+
+
+def save_inventory(transaction_history):
+    """Save the inventory records to the file."""
+
+    with open(INVENTORY_FILE, "w") as f:
+        for item in transaction_history:
+            item_id, product_name, quantity = item
+
+            f.write(
+                f"{item_id}, {product_name}, {quantity}\n"
+            )
+
+    print("Order successfully saved to", INVENTORY_FILE)
 
 
 def get_valid_input():
@@ -78,15 +97,22 @@ def main():
     # Load previously saved inventory
     transaction_history = load_inventory()
 
+    # Calculate the total inventory
+    for item in transaction_history:
+        inventory += item[2]
 
     print("\nCurrent Inventory:")
     print("")
 
-    for item in transaction_history:
-        item_id, product_name, quantity = item
-        print(
-            f"{item_id}, {product_name}, {quantity}"
-        )
+    if not transaction_history:
+        print("No inventory found.")
+    else:
+        for item in transaction_history:
+            item_id, product_name, quantity = item
+
+            print(
+                f"{item_id}, {product_name}, {quantity}"
+            )
 
     while not exit_program:
         product_name, quantity = get_valid_input()
@@ -119,6 +145,14 @@ def main():
 
             # Update inventory total
             inventory += quantity
+
+            print("\nNew Order added:")
+            print(
+                f"{item_id}, {product_name}, {quantity}"
+            )
+
+            # Save the updated transaction history
+            save_inventory(transaction_history)
 
             # Check maximum capacity
             if inventory > MAX_CAPACITY:
