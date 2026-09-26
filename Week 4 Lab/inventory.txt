@@ -1,0 +1,4 @@
+1001, wireless mouse, 2
+1002, keyboard, 1
+1003, uab cable, 3
+1004, tablet , 1

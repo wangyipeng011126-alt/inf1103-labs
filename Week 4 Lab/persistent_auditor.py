@@ -1,20 +1,16 @@
 # Global Constants
 MAX_CAPACITY = 500
 TAX_RATE = 0.1  # 10% tax rate
-INVENTORY_FILE = "inventory.txt"
+INVENTORY_FILE = r"inventory.txt"
 
 
 def load_inventory():
-    """Read the saved inventory from the file.
+    """Read the saved inventory from the file."""
+    inventory = 0
+    transaction_history = []
 
-    Returns:
-        list: A list containing inventory records.
-        If the file does not exist, return an empty list.
-    """
     try:
         with open(INVENTORY_FILE, "r") as f:
-            inventory = []
-
             for line in f:
                 line = line.strip()
 
@@ -25,20 +21,19 @@ def load_inventory():
                     product_name = parts[1].strip()
                     quantity = int(parts[2].strip())
 
-                    inventory.append(
+                    transaction_history.append(
                         (item_id, product_name, quantity)
                     )
+                    inventory += quantity
 
-            return inventory
+            return inventory, transaction_history
 
     except FileNotFoundError:
         print("No previous inventory found. Starting fresh.")
-        return []
+        return 0, []
 
-
-def save_inventory(transaction_history):
+def save_inventory(inventory, transaction_history):
     """Save the inventory records to the file."""
-
     with open(INVENTORY_FILE, "w") as f:
         for item in transaction_history:
             item_id, product_name, quantity = item
@@ -90,16 +85,12 @@ def main():
     # Required variables
     inventory = 0
     transaction_history = []
-
+    tax_amount = 0
     failed_entries = 0
     exit_program = False
 
     # Load previously saved inventory
-    transaction_history = load_inventory()
-
-    # Calculate the total inventory
-    for item in transaction_history:
-        inventory += item[2]
+    inventory, transaction_history = load_inventory()
 
     print("\nCurrent Inventory:")
     print("")
@@ -125,7 +116,10 @@ def main():
             print("\nTotal Inventory:", inventory)
             print("Tax Amount:", tax_amount)
 
-            generate_report(inventory, failed_entries)
+            generate_report(
+                inventory,
+                failed_entries
+            )
 
             exit_program = True
 
@@ -151,8 +145,11 @@ def main():
                 f"{item_id}, {product_name}, {quantity}"
             )
 
-            # Save the updated transaction history
-            save_inventory(transaction_history)
+            # Save the updated inventory and transaction history
+            save_inventory(
+                inventory,
+                transaction_history
+            )
 
             # Check maximum capacity
             if inventory > MAX_CAPACITY:
