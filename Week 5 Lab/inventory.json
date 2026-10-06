@@ -1,0 +1,14 @@
+[
+    {
+        "product_id": "POO1",
+        "name": "Monitor",
+        "price": 299.99,
+        "stock": 10
+    },
+    {
+        "product_id": "P002",
+        "name": "Laptop ",
+        "price": 1200.0,
+        "stock": 15
+    }
+]
