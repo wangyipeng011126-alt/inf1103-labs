@@ -22,5 +22,13 @@
         "stock": 100,
         "type": "digital",
         "download_size": 1000.0
+    },
+    {
+        "product_id": "S001",
+        "name": "Netflix Membership",
+        "price": 99.0,
+        "stock": 200,
+        "type": "subscription",
+        "billing_period": "monthly"
     }
 ]

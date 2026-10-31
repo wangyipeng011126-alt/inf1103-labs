@@ -103,7 +103,7 @@ def main():
                     print("Error: Price and stock cannot be negative.")
                     continue
 
-                product_type = input("Product type (physical/digital): ").strip().lower()
+                product_type = input("Product type (physical/digital/subscription): ").strip().lower()
 
                 if product_type == "physical":
                     weight = float(input("Weight (kg): "))
@@ -127,7 +127,7 @@ def main():
                     product = SubscriptionProduct(product_id, name, price, stock, billing_period)
 
                 else:
-                    print("Error: Product type must be 'physical' or 'digital'.")
+                    print("Error: Product type must be 'physical', 'digital', or 'subscription'.")
                     continue
 
                 if inventory.add_product(product):
