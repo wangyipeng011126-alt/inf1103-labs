@@ -1,0 +1,30 @@
+git add .
+git commit -m "Remark"
+git push
+
+
+Docker: 1. Command for Mount and Run
+docker run --rm -it -v "${PWD}:/app" -w /app python:3.11-slim python persistent_auditor.py
+
+Docker: 2. Execute Mount and Run
+docker run --rm -it -v "${PWD}:/usr/src/app" -w /usr/src/app python:3.11-slim python main.py
+
+Dockerfile
+
+FROM python:3.11-slim
+WORKDIR /usr/src/app
+COPY persistent_auditor.py .
+CMD ["python", "persistent_auditor.py"]
+
+Docker: 3. Build Custom Image
+docker build -t inf1103-labs-smart-persistent_auditor .
+
+
+Docker: 4. Run Container Image (Sample Output)
+docker run --rm -it inf1103-labs-smart-persistent_auditor
+
+docker run --rm -it -v "${PWD}:/usr/src/app" inf1103-labs-smart-persistent_auditor 
+
+(use this so that changes make in docker can be saved)
+
+-v "${PWD}:/usr/src/app" means the file location where its located at, without this the docker is unable to read the file

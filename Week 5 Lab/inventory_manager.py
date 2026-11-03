@@ -1,10 +1,13 @@
 # Global Constants
-
+import os
 import json
 
 MAX_CAPACITY = 500
 TAX_RATE = 0.1  # 10% tax rate
-INVENTORY_FILE = r"inventory.json"
+INVENTORY_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "inventory.json"
+)
 
 
 def load_inventory():
