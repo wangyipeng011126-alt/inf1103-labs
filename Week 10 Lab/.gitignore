@@ -1,14 +1,8 @@
-# Python cache files 
-__pycache__/ 
-*.py[cod] 
-
-# Virtual environments 
-.venv/ 
-venv/ 
-
-# Local environment variables 
-.env 
-
-# IDE settings 
-.vscode/ 
-.idea/ 
+__pycache__/
+.pytest_cache/
+*.pyc
+.git/
+screenshot.docx
+UML Diagram.png
+log.txt
+Common Git Command.txt

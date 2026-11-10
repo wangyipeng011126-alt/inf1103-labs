@@ -37,5 +37,18 @@
         },
         "type": "subscription",
         "billing_period": "monthly"
+    },
+    {
+        "product_id": "P2",
+        "name": "Laptop mouse",
+        "price": 29.99,
+        "stock": 1,
+        "supplier": {
+            "supplier_id": "L1",
+            "name": "Lenovo",
+            "contact_email": "lenovo@gmail.com"
+        },
+        "type": "physical",
+        "weight": 0.9
     }
 ]
