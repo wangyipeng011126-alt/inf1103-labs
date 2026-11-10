@@ -1,33 +1,40 @@
 [
     {
-        "product_id": "P001",
-        "name": "Acoustic Guitar",
-        "price": 499.99,
-        "stock": 500,
-        "type": "physical",
-        "weight": 3.2
-    },
-    {
-        "product_id": "P003",
+        "product_id": "P1",
         "name": "Laptop",
         "price": 2999.0,
-        "stock": 100,
+        "stock": 20,
+        "supplier": {
+            "supplier_id": "Acer1",
+            "name": "acer",
+            "contact_email": "acer@gmail.com"
+        },
         "type": "physical",
         "weight": 2.1
     },
     {
-        "product_id": "D002",
-        "name": "Game 1",
-        "price": 99.0,
-        "stock": 100,
+        "product_id": "D1",
+        "name": "val",
+        "price": 29.99,
+        "stock": 99,
+        "supplier": {
+            "supplier_id": "val1",
+            "name": "FPS",
+            "contact_email": "val@gmail.com"
+        },
         "type": "digital",
-        "download_size": 1000.0
+        "download_size": 2500.0
     },
     {
-        "product_id": "S001",
-        "name": "Netflix Membership",
-        "price": 99.0,
-        "stock": 200,
+        "product_id": "S1",
+        "name": "youtube sub",
+        "price": 99.99,
+        "stock": 10,
+        "supplier": {
+            "supplier_id": "youtube1",
+            "name": "youtube membership",
+            "contact_email": "youtube@gmail.com"
+        },
         "type": "subscription",
         "billing_period": "monthly"
     }

@@ -21,7 +21,7 @@ class Inventory:
     def find_product(self, product_id: str) -> Product | None:
         for product in self.products:
             if product.get_product_id() == product_id:
-                return product
+                return product          
         return None
 
     search_product = find_product          # keeps main.py working

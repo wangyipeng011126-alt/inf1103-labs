@@ -20,17 +20,25 @@ class Product(ABC):
               f"Name: {self.__name} | "
               f"Price: ${self.__price:.2f} | "
               f"Stock: {self.__stock}")
-        self.__supplier.display_information()      # <- demonstrates the association
+        self.__supplier.display_information()
 
     @abstractmethod
     def get_fulfilment_info(self) -> str:
-        ...
+        """Return a message describing how this product is fulfilled."""
+        pass
 
-    # getters
-    def get_product_id(self) -> str: ...
-    def get_name(self) -> str: ...
-    def get_price(self) -> float: ...
-    def get_stock(self) -> int: ...
+    # --- getters ---
+    def get_product_id(self) -> str:
+        return self.__product_id         
+
+    def get_name(self) -> str:
+        return self.__name
+
+    def get_price(self) -> float:
+        return self.__price
+
+    def get_stock(self) -> int:
+        return self.__stock
 
     def get_supplier(self) -> Supplier:
         return self.__supplier
