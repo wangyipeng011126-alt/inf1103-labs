@@ -1,17 +1,53 @@
 import os
 import json
+
+from can_be_shipped import CanBeShipped
+from digitalproduct import DigitalProduct
 from inventory import Inventory
 from physicalproduct import PhysicalProduct
-from digitalproduct import DigitalProduct
 from subscription_product import SubscriptionProduct
+from supplier import Supplier
 
 INVENTORY_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "inventory.json"
 )
 
+# Fallback used when loading old inventory.json files written before
+# suppliers existed, so the program keeps working without a crash.
+UNKNOWN_SUPPLIER = Supplier("SUP-000", "Unknown Supplier", "unknown@example.com")
 
-def load_inventory():
+# Session-wide cache of Supplier objects, keyed by supplier_id.
+# Every Product shares the same Supplier instance for a given ID.
+known_suppliers: dict[str, Supplier] = {}
+
+
+def resolve_supplier(raw: dict | None) -> Supplier:
+    """Return the cached Supplier for this record, creating it only once."""
+    if not raw:
+        return UNKNOWN_SUPPLIER
+    sid = raw["supplier_id"]
+    if sid not in known_suppliers:
+        known_suppliers[sid] = Supplier(sid, raw["name"], raw["contact_email"])
+    return known_suppliers[sid]
+
+
+def prompt_supplier() -> Supplier:
+    """Ask for a supplier, reusing one if the ID already exists."""
+    supplier_id = input("Supplier ID: ").strip()
+    existing = known_suppliers.get(supplier_id)
+    if existing is not None:
+        print(f"Using existing supplier: {existing.get_name()}")
+        return existing
+
+    name = input("Supplier Name: ").strip()
+    email = input("Supplier Contact Email: ").strip()
+    supplier = Supplier(supplier_id, name, email)
+    known_suppliers[supplier_id] = supplier
+    return supplier
+
+
+def load_inventory() -> Inventory:
     inventory = Inventory()
 
     try:
@@ -20,6 +56,7 @@ def load_inventory():
 
         for item in data:
             product_type = item.get("type")
+            supplier = resolve_supplier(item.get("supplier"))
 
             if product_type == "physical":
                 product = PhysicalProduct(
@@ -28,6 +65,7 @@ def load_inventory():
                     item["price"],
                     item["stock"],
                     item["weight"],
+                    supplier,
                 )
             elif product_type == "digital":
                 product = DigitalProduct(
@@ -36,6 +74,7 @@ def load_inventory():
                     item["price"],
                     item["stock"],
                     item["download_size"],
+                    supplier,
                 )
             elif product_type == "subscription":
                 product = SubscriptionProduct(
@@ -44,6 +83,7 @@ def load_inventory():
                     item["price"],
                     item["stock"],
                     item["billing_period"],
+                    supplier,
                 )
             else:
                 print(f"⚠️  Skipping unknown product type: {product_type!r}")
@@ -60,13 +100,13 @@ def load_inventory():
     return inventory
 
 
-def save_inventory(inventory):
+def save_inventory(inventory: Inventory) -> None:
     data = [product.to_dict() for product in inventory.get_products()]
     with open(INVENTORY_FILE, "w") as file:
         json.dump(data, file, indent=4)
 
 
-def main():
+def main() -> None:
     print("=" * 40)
     print("INVENTORY MANAGEMENT SYSTEM")
     print("=" * 40)
@@ -87,7 +127,7 @@ def main():
         option = input("Enter option: ")
 
         if option == "1":
-            inventory.display_all()
+            inventory.display_all_products()
 
         elif option == "2":
             print("Add New Product")
@@ -103,32 +143,46 @@ def main():
                     print("Error: Price and stock cannot be negative.")
                     continue
 
-                product_type = input("Product type (physical/digital/subscription): ").strip().lower()
+                product_type = (
+                    input("Product type (physical/digital/subscription): ")
+                    .strip()
+                    .lower()
+                )
+
+                if product_type not in ("physical", "digital", "subscription"):
+                    print("Error: Product type must be 'physical', 'digital', or 'subscription'.")
+                    continue
+
+                supplier = prompt_supplier()
 
                 if product_type == "physical":
                     weight = float(input("Weight (kg): "))
                     if weight < 0:
                         print("Error: Weight cannot be negative.")
                         continue
-                    product = PhysicalProduct(product_id, name, price, stock, weight)
+                    product = PhysicalProduct(
+                        product_id, name, price, stock, weight, supplier
+                    )
 
                 elif product_type == "digital":
                     download_size = float(input("Download size (MB): "))
                     if download_size < 0:
                         print("Error: Download size cannot be negative.")
                         continue
-                    product = DigitalProduct(product_id, name, price, stock, download_size)
+                    product = DigitalProduct(
+                        product_id, name, price, stock, download_size, supplier
+                    )
 
-                elif product_type == "subscription":
-                    billing_period = input("Billing period (monthly/yearly): ").strip().lower()
+                else:  # subscription
+                    billing_period = (
+                        input("Billing period (monthly/yearly): ").strip().lower()
+                    )
                     if billing_period not in ("monthly", "yearly"):
                         print("Error: Billing period must be 'monthly' or 'yearly'.")
                         continue
-                    product = SubscriptionProduct(product_id, name, price, stock, billing_period)
-
-                else:
-                    print("Error: Product type must be 'physical', 'digital', or 'subscription'.")
-                    continue
+                    product = SubscriptionProduct(
+                        product_id, name, price, stock, billing_period, supplier
+                    )
 
                 if inventory.add_product(product):
                     print("Product added successfully!")
@@ -142,7 +196,7 @@ def main():
             print("Update Stock")
 
             product_id = input("Enter Product ID: ")
-            product = inventory.search_product(product_id)
+            product = inventory.find_product(product_id)
 
             if product:
                 print("Product Found!")
@@ -165,7 +219,7 @@ def main():
             print("Search Product")
 
             product_id = input("Enter Product ID: ")
-            product = inventory.search_product(product_id)
+            product = inventory.find_product(product_id)
 
             if product:
                 print("Product Found")
@@ -173,8 +227,8 @@ def main():
                 product.display_information()
                 print(f"  Fulfilment: {product.get_fulfilment_info()}")
 
-                # Bonus: show shipping cost only if the product supports it
-                if isinstance(product, __import__("can_be_shipped").CanBeShipped):
+                # Interface check, not a subclass check — LSP-safe.
+                if isinstance(product, CanBeShipped):
                     print(f"  Shipping cost: ${product.calculate_shipping_cost():.2f}")
 
                 print("-" * 48)
