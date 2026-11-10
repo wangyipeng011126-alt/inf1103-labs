@@ -1,0 +1,34 @@
+[
+    {
+        "product_id": "P001",
+        "name": "Acoustic Guitar",
+        "price": 499.99,
+        "stock": 500,
+        "type": "physical",
+        "weight": 3.2
+    },
+    {
+        "product_id": "P003",
+        "name": "Laptop",
+        "price": 2999.0,
+        "stock": 100,
+        "type": "physical",
+        "weight": 2.1
+    },
+    {
+        "product_id": "D002",
+        "name": "Game 1",
+        "price": 99.0,
+        "stock": 100,
+        "type": "digital",
+        "download_size": 1000.0
+    },
+    {
+        "product_id": "S001",
+        "name": "Netflix Membership",
+        "price": 99.0,
+        "stock": 200,
+        "type": "subscription",
+        "billing_period": "monthly"
+    }
+]
