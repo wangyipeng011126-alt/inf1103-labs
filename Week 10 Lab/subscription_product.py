@@ -2,9 +2,9 @@ from product import Product
 
 
 class SubscriptionProduct(Product):
-    def __init__(self, product_id, name, price, stock, billing_period):
-        super().__init__(product_id, name, price, stock)
-        self.__billing_period = billing_period   
+    def __init__(self, product_id: str, name: str, price: float,
+                stock: int, weight: float, supplier: Supplier) -> None:
+        super().__init__(product_id, name, price, stock, supplier)  
 
     def get_billing_period(self):
         return self.__billing_period
