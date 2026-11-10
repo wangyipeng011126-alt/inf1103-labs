@@ -29,7 +29,7 @@ class Product(ABC):
 
     # --- getters ---
     def get_product_id(self) -> str:
-        return self.__product_id         
+        return self.__product_id
 
     def get_name(self) -> str:
         return self.__name

@@ -1,10 +1,9 @@
 import os
 import json
 
-from can_be_shipped import CanBeShipped
-from digitalproduct import DigitalProduct
 from inventory import Inventory
 from physicalproduct import PhysicalProduct
+from digitalproduct import DigitalProduct
 from subscription_product import SubscriptionProduct
 from supplier import Supplier
 
@@ -13,17 +12,14 @@ INVENTORY_FILE = os.path.join(
     "inventory.json"
 )
 
-# Fallback used when loading old inventory.json files written before
-# suppliers existed, so the program keeps working without a crash.
+# Fallback for old inventory.json files that have no "supplier" block.
 UNKNOWN_SUPPLIER = Supplier("SUP-000", "Unknown Supplier", "unknown@example.com")
 
-# Session-wide cache of Supplier objects, keyed by supplier_id.
-# Every Product shares the same Supplier instance for a given ID.
+# Shared cache so products with the same supplier_id share ONE Supplier object.
 known_suppliers: dict[str, Supplier] = {}
 
 
 def resolve_supplier(raw: dict | None) -> Supplier:
-    """Return the cached Supplier for this record, creating it only once."""
     if not raw:
         return UNKNOWN_SUPPLIER
     sid = raw["supplier_id"]
@@ -33,13 +29,11 @@ def resolve_supplier(raw: dict | None) -> Supplier:
 
 
 def prompt_supplier() -> Supplier:
-    """Ask for a supplier, reusing one if the ID already exists."""
     supplier_id = input("Supplier ID: ").strip()
     existing = known_suppliers.get(supplier_id)
     if existing is not None:
         print(f"Using existing supplier: {existing.get_name()}")
         return existing
-
     name = input("Supplier Name: ").strip()
     email = input("Supplier Contact Email: ").strip()
     supplier = Supplier(supplier_id, name, email)
@@ -55,35 +49,23 @@ def load_inventory() -> Inventory:
             data = json.load(file)
 
         for item in data:
-            product_type = item.get("type")
             supplier = resolve_supplier(item.get("supplier"))
+            product_type = item.get("type")
 
             if product_type == "physical":
                 product = PhysicalProduct(
-                    item["product_id"],
-                    item["name"],
-                    item["price"],
-                    item["stock"],
-                    item["weight"],
-                    supplier,
+                    item["product_id"], item["name"], item["price"],
+                    item["stock"], item["weight"], supplier,
                 )
             elif product_type == "digital":
                 product = DigitalProduct(
-                    item["product_id"],
-                    item["name"],
-                    item["price"],
-                    item["stock"],
-                    item["download_size"],
-                    supplier,
+                    item["product_id"], item["name"], item["price"],
+                    item["stock"], item["download_size"], supplier,
                 )
             elif product_type == "subscription":
                 product = SubscriptionProduct(
-                    item["product_id"],
-                    item["name"],
-                    item["price"],
-                    item["stock"],
-                    item["billing_period"],
-                    supplier,
+                    item["product_id"], item["name"], item["price"],
+                    item["stock"], item["billing_period"], supplier,
                 )
             else:
                 print(f"⚠️  Skipping unknown product type: {product_type!r}")
@@ -96,6 +78,8 @@ def load_inventory() -> Inventory:
 
     except FileNotFoundError:
         print("inventory.json not found. Starting fresh.")
+    except json.JSONDecodeError:
+        print("inventory.json is empty or corrupted. Starting fresh.")
 
     return inventory
 
@@ -127,11 +111,10 @@ def main() -> None:
         option = input("Enter option: ")
 
         if option == "1":
-            inventory.display_all_products()
+            inventory.display_all()
 
         elif option == "2":
             print("Add New Product")
-
             product_id = input("Product ID: ")
             name = input("Product Name: ")
 
@@ -145,12 +128,11 @@ def main() -> None:
 
                 product_type = (
                     input("Product type (physical/digital/subscription): ")
-                    .strip()
-                    .lower()
+                    .strip().lower()
                 )
 
                 if product_type not in ("physical", "digital", "subscription"):
-                    print("Error: Product type must be 'physical', 'digital', or 'subscription'.")
+                    print("Error: Invalid product type.")
                     continue
 
                 supplier = prompt_supplier()
@@ -163,7 +145,6 @@ def main() -> None:
                     product = PhysicalProduct(
                         product_id, name, price, stock, weight, supplier
                     )
-
                 elif product_type == "digital":
                     download_size = float(input("Download size (MB): "))
                     if download_size < 0:
@@ -172,7 +153,6 @@ def main() -> None:
                     product = DigitalProduct(
                         product_id, name, price, stock, download_size, supplier
                     )
-
                 else:  # subscription
                     billing_period = (
                         input("Billing period (monthly/yearly): ").strip().lower()
@@ -194,15 +174,13 @@ def main() -> None:
 
         elif option == "3":
             print("Update Stock")
-
             product_id = input("Enter Product ID: ")
-            product = inventory.find_product(product_id)
+            product = inventory.search_product(product_id)
 
             if product:
                 print("Product Found!")
                 print(f"Name: {product.get_name()}")
                 print(f"Current Stock: {product.get_stock()}")
-
                 try:
                     new_stock = int(input("New Stock Quantity: "))
                     if new_stock < 0:
@@ -217,20 +195,16 @@ def main() -> None:
 
         elif option == "4":
             print("Search Product")
-
             product_id = input("Enter Product ID: ")
-            product = inventory.find_product(product_id)
+            product = inventory.search_product(product_id)
 
             if product:
                 print("Product Found")
                 print("-" * 48)
                 product.display_information()
                 print(f"  Fulfilment: {product.get_fulfilment_info()}")
-
-                # Interface check, not a subclass check — LSP-safe.
-                if isinstance(product, CanBeShipped):
+                if hasattr(product, "calculate_shipping_cost"):
                     print(f"  Shipping cost: ${product.calculate_shipping_cost():.2f}")
-
                 print("-" * 48)
             else:
                 print("Product not found.")

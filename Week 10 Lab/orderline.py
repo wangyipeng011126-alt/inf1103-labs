@@ -2,8 +2,8 @@ from product import Product
 
 
 class OrderLine:
-    """Composition part: created only by Order. Holds a *reference* to a Product
-    (association) but does not own it."""
+    """Composition part: created only by Order. Holds a *reference* to a
+    Product (association) but does NOT own it — the Product exists independently."""
 
     def __init__(self, product: Product, quantity: int) -> None:
         if quantity <= 0:
@@ -19,6 +19,7 @@ class OrderLine:
               f"x{self.__quantity} @ ${self.__product.get_price():.2f} "
               f"= ${self.calculate_subtotal():.2f}")
 
+    # --- getters ---
     def get_product(self) -> Product:
         return self.__product
 
