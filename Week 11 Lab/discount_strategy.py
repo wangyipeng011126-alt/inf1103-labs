@@ -45,3 +45,20 @@ class BulkDiscount(DiscountStrategy):
         if total >= self.__threshold:
             return total - self.__amount
         return total
+
+class StudentDiscount(DiscountStrategy):
+    """Fixed 5% student discount. Requires a non-empty student ID."""
+
+    RATE: float = 0.05
+
+    def __init__(self, student_id: str) -> None:
+        student_id = student_id.strip()
+        if not student_id:
+            raise ValueError("Student ID is required for a student discount.")
+        self.__student_id: str = student_id
+
+    def get_student_id(self) -> str:
+        return self.__student_id
+
+    def apply(self, total: float) -> float:
+        return total * (1 - self.RATE)
