@@ -2,9 +2,7 @@ import os
 import json
 
 from inventory import Inventory
-from physicalproduct import PhysicalProduct
-from digitalproduct import DigitalProduct
-from subscription_product import SubscriptionProduct
+from product_factory import ProductFactory
 from supplier import Supplier
 
 INVENTORY_FILE = os.path.join(
@@ -137,32 +135,34 @@ def main() -> None:
 
                 supplier = prompt_supplier()
 
+                type_specific: dict = {}
                 if product_type == "physical":
                     weight = float(input("Weight (kg): "))
                     if weight < 0:
                         print("Error: Weight cannot be negative.")
                         continue
-                    product = PhysicalProduct(
-                        product_id, name, price, stock, weight, supplier
-                    )
+                    type_specific["weight"] = weight
                 elif product_type == "digital":
                     download_size = float(input("Download size (MB): "))
                     if download_size < 0:
                         print("Error: Download size cannot be negative.")
                         continue
-                    product = DigitalProduct(
-                        product_id, name, price, stock, download_size, supplier
-                    )
+                    type_specific["download_size"] = download_size
                 else:  # subscription
                     billing_period = (
-                        input("Billing period (monthly/yearly): ").strip().lower()
+                        input("Billing period (monthly/yearly): ")
+                        .strip().lower()
                     )
                     if billing_period not in ("monthly", "yearly"):
-                        print("Error: Billing period must be 'monthly' or 'yearly'.")
+                        print("Error: Billing period must be "
+                              "'monthly' or 'yearly'.")
                         continue
-                    product = SubscriptionProduct(
-                        product_id, name, price, stock, billing_period, supplier
-                    )
+                    type_specific["billing_period"] = billing_period
+
+                product = ProductFactory.create(
+                    product_type, product_id, name, price, stock, supplier,
+                    **type_specific,
+                )
 
                 if inventory.add_product(product):
                     print("Product added successfully!")
