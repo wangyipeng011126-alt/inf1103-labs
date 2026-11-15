@@ -1,5 +1,6 @@
 import os
 import json
+import csv
 
 from inventory import Inventory
 from product_factory import ProductFactory
@@ -39,6 +40,45 @@ def prompt_supplier() -> Supplier:
     return supplier
 
 
+def get_positive_float(prompt: str) -> float:
+    """Keep asking until the user enters a number greater than zero."""
+    while True:
+        try:
+            value = float(input(prompt))
+            if value <= 0:
+                print("Please enter a number greater than zero.")
+                continue
+            return value
+        except ValueError:
+            print("Please enter a valid number, e.g. 12.50")
+
+
+def get_non_negative_int(prompt: str) -> int:
+    """Keep asking until the user enters a whole number >= 0."""
+    while True:
+        try:
+            value = int(input(prompt))
+            if value < 0:
+                print("Please enter a whole number (0 or more).")
+                continue
+            return value
+        except ValueError:
+            print("Please enter a whole number, e.g. 10")
+
+
+def get_non_negative_float(prompt: str) -> float:
+    """Keep asking until the user enters a number >= 0."""
+    while True:
+        try:
+            value = float(input(prompt))
+            if value < 0:
+                print("Please enter a number (0 or more).")
+                continue
+            return value
+        except ValueError:
+            print("Please enter a valid number, e.g. 2.5")
+
+
 def load_inventory() -> Inventory:
     inventory = Inventory()
 
@@ -75,6 +115,46 @@ def load_inventory() -> Inventory:
     return inventory
 
 
+def load_products(path: str, inventory: Inventory,
+                  supplier: Supplier) -> None:
+    """Load products from a CSV file via the factory.
+
+    A missing file is reported, not raised. Individual bad rows are
+    reported and skipped so loading carries on.
+    """
+    loaded = 0
+    try:
+        file = open(path, newline="")
+    except FileNotFoundError:
+        print(f"Products file not found: {path}")
+    else:
+        with file:
+            reader = csv.reader(file)
+            next(reader, None)          # skip header row
+            for row_number, row in enumerate(reader, start=2):
+                if not row or all(not cell.strip() for cell in row):
+                    continue            # skip blank lines
+                try:
+                    product = ProductFactory.create(
+                        row[0].strip(),        # product_type
+                        row[1].strip(),        # product_id
+                        row[2].strip(),        # name
+                        row[3].strip(),        # price
+                        row[4].strip(),        # stock_quantity
+                        supplier,
+                    )
+                    if inventory.add_product(product):
+                        loaded += 1
+                    else:
+                        print(f"⚠️  Row {row_number}: duplicate product "
+                              f"ID {row[1].strip()} — skipped.")
+                except (ValueError, IndexError) as error:
+                    print(f"⚠️  Row {row_number}: {error} — skipped.")
+        print(f"{loaded} products loaded.")
+    finally:
+        print("Load attempt finished.")
+
+
 def save_inventory(inventory: Inventory) -> None:
     data = [product.to_dict() for product in inventory.get_products()]
     with open(INVENTORY_FILE, "w") as file:
@@ -96,7 +176,8 @@ def main() -> None:
         print("3. Update Stock")
         print("4. Search Product")
         print("5. Save Inventory")
-        print("6. Exit")
+        print("6. Load Products from CSV")
+        print("7. Exit")
         print("----------------------------")
 
         option = input("Enter option: ")
@@ -108,39 +189,44 @@ def main() -> None:
             print("Add New Product")
             product_id = input("Product ID: ").strip()
             name = input("Product Name: ").strip()
+            price = get_positive_float("Price: ")
+            stock = get_non_negative_int("Stock Quantity: ")
 
-            try:
-                price = float(input("Price: "))
-                stock = int(input("Stock Quantity: "))
+            product_type = (
+                input("Product type (physical/digital/subscription): ")
+                .strip().lower()
+            )
+            if product_type not in ("physical", "digital", "subscription"):
+                print("Error: Invalid product type.")
+                continue
 
-                product_type = (
-                    input("Product type (physical/digital/subscription): ")
-                    .strip().lower()
+            supplier = prompt_supplier()
+
+            type_specific: dict = {}
+            if product_type == "physical":
+                type_specific["weight"] = get_non_negative_float(
+                    "Weight (kg): "
                 )
-                if product_type not in ("physical", "digital", "subscription"):
-                    print("Error: Invalid product type.")
-                    continue
-
-                supplier = prompt_supplier()
-
-                type_specific: dict = {}
-                if product_type == "physical":
-                    type_specific["weight"] = float(input("Weight (kg): "))
-                elif product_type == "digital":
-                    type_specific["download_size"] = float(
-                        input("Download size (MB): ")
-                    )
-                else:
-                    type_specific["billing_period"] = (
+            elif product_type == "digital":
+                type_specific["download_size"] = get_non_negative_float(
+                    "Download size (MB): "
+                )
+            else:
+                while True:
+                    period = (
                         input("Billing period (monthly/yearly): ")
                         .strip().lower()
                     )
+                    if period in ("monthly", "yearly"):
+                        type_specific["billing_period"] = period
+                        break
+                    print("Please enter 'monthly' or 'yearly'.")
 
+            try:
                 product = ProductFactory.create(
                     product_type, product_id, name, price, stock, supplier,
                     **type_specific,
                 )
-
             except ValueError as error:
                 print(f"Error: {error}")
                 continue
@@ -179,7 +265,8 @@ def main() -> None:
                 product.display_information()
                 print(f"  Fulfilment: {product.get_fulfilment_info()}")
                 if hasattr(product, "calculate_shipping_cost"):
-                    print(f"  Shipping cost: ${product.calculate_shipping_cost():.2f}")
+                    print(f"  Shipping cost: "
+                          f"${product.calculate_shipping_cost():.2f}")
                 print("-" * 48)
             else:
                 print("Product not found.")
@@ -190,6 +277,15 @@ def main() -> None:
             print("Inventory saved successfully to inventory.json.")
 
         elif option == "6":
+            path = input("CSV path (default: products.csv): ").strip()
+            if not path:
+                path = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    "products.csv",
+                )
+            load_products(path, inventory, UNKNOWN_SUPPLIER)
+
+        elif option == "7":
             print("Saving inventory before exit...")
             save_inventory(inventory)
             print("Inventory saved successfully.")

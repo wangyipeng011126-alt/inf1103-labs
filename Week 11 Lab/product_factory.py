@@ -3,6 +3,11 @@
 Client code asks the factory for a Product and only ever sees the
 Product base type — it never constructs PhysicalProduct, DigitalProduct
 or SubscriptionProduct itself. Add a new product type in one place.
+
+Type-specific fields are optional: when omitted (e.g. when reading the
+lab's products.csv, which has no weight/download_size/billing_period
+columns) sensible defaults are used. Any explicit value is still
+validated by the concrete class.
 """
 
 from product import Product
@@ -16,28 +21,20 @@ class ProductFactory:
     @staticmethod
     def create(product_type: str, product_id: str, name: str,
                price: float, stock: int, supplier: Supplier,
-               *, weight: float | None = None,
-               download_size: float | None = None,
-               billing_period: str | None = None) -> Product:
+               *, weight: float = 0.0,
+               download_size: float = 0.0,
+               billing_period: str = "monthly") -> Product:
         product_type = product_type.strip().lower()
 
         if product_type == "physical":
-            if weight is None:
-                raise ValueError("Physical product requires 'weight'.")
             return PhysicalProduct(product_id, name, price, stock,
                                    weight, supplier)
 
         elif product_type == "digital":
-            if download_size is None:
-                raise ValueError("Digital product requires 'download_size'.")
             return DigitalProduct(product_id, name, price, stock,
                                   download_size, supplier)
 
         elif product_type == "subscription":
-            if billing_period is None:
-                raise ValueError(
-                    "Subscription product requires 'billing_period'."
-                )
             return SubscriptionProduct(product_id, name, price, stock,
                                        billing_period, supplier)
 
