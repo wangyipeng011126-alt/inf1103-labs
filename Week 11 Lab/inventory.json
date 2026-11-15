@@ -3,7 +3,7 @@
         "product_id": "P1",
         "name": "Laptop",
         "price": 2999.0,
-        "stock": 20,
+        "stock": 100,
         "supplier": {
             "supplier_id": "Acer1",
             "name": "acer",
