@@ -5,11 +5,9 @@ from discount_strategy import DiscountStrategy, NoDiscount
 
 class Order:
     """Composition whole: creates and owns its OrderLine objects.
-    OrderLines cannot be passed in from outside, cannot be transferred
-    to another Order, and die with this Order.
 
-    A discount is an injected Strategy: Order calls apply_discount()
-    without knowing how any particular discount works."""
+    A discount is an injected Strategy: Order calls apply() without
+    knowing how any particular discount works."""
 
     def __init__(self, order_id: str,
                  discount: DiscountStrategy | None = None) -> None:
@@ -38,7 +36,7 @@ class Order:
         return sum(line.calculate_subtotal() for line in self.order_lines)
 
     def calculate_total(self) -> float:
-        return self.__discount.apply_discount(self.calculate_subtotal())
+        return self.__discount.apply(self.calculate_subtotal())
 
     def display_information(self) -> None:
         print(f"Order {self.order_id}")
@@ -52,6 +50,6 @@ class Order:
         subtotal = self.calculate_subtotal()
         total = self.calculate_total()
         print(f"  Subtotal: ${subtotal:.2f}")
-        print(f"  Discount: {self.__discount.get_name()} "
+        print(f"  Discount: {type(self.__discount).__name__} "
               f"(-${subtotal - total:.2f})")
         print(f"  Total: ${total:.2f}")
