@@ -58,6 +58,20 @@ def test_strategy_discounts() -> None:
     print(f"  order2 with bulk(50,5): ${order2.calculate_total():.2f}")
     assert order2.calculate_total() == 45.00
 
+    # --- Section 2.3 predict-first: subtotal 250 ---
+    widget = PhysicalProduct("P9", "Widget", 125.00, 10, 1.0, supplier)
+    order3 = Order("ORD-3", BulkDiscount(200, 20))
+    order3.add_order_line(widget, 2)                # subtotal 250.00
+
+    # predict: 250 >= 200 → 250 - 20 = 230.0
+    print(f"  order3 bulk(200,20): ${order3.calculate_total():.2f}")
+    assert order3.calculate_total() == 230.0
+
+    order3.set_discount(PercentageDiscount(10))
+    # predict: 250 * 0.9 = 225.0
+    print(f"  order3 after 10% off: ${order3.calculate_total():.2f}")
+    assert order3.calculate_total() == 225.0
+
 
 if __name__ == "__main__":
     test_strategy_discounts()
