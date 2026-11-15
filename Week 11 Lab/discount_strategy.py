@@ -3,6 +3,9 @@
 Each concrete strategy implements apply() and is interchangeable.
 Order depends only on DiscountStrategy, so a new discount means a new
 class — not an edit to Order (Open/Closed Principle).
+
+Each strategy validates its own parameters in __init__ (Section 4):
+a broken rule raises ValueError before the object can be used.
 """
 
 from abc import ABC, abstractmethod
@@ -15,13 +18,20 @@ class DiscountStrategy(ABC):
 
 
 class NoDiscount(DiscountStrategy):
+    """Identity discount: returns the total unchanged."""
+
     def apply(self, total: float) -> float:
         return total
 
 
 class PercentageDiscount(DiscountStrategy):
+    """Takes a percentage off, e.g. PercentageDiscount(10) is 10% off."""
+
     def __init__(self, percentage: float) -> None:
-        self.__percentage: float = float(percentage)
+        percentage = float(percentage)
+        if not 0 <= percentage <= 100:
+            raise ValueError("Percentage must be between 0 and 100.")
+        self.__percentage: float = percentage
 
     def get_percentage(self) -> float:
         return self.__percentage
@@ -31,9 +41,23 @@ class PercentageDiscount(DiscountStrategy):
 
 
 class BulkDiscount(DiscountStrategy):
+    """Takes a fixed amount off any total at or above the threshold,
+    e.g. BulkDiscount(200, 20) takes 20 off totals of 200 or more."""
+
     def __init__(self, threshold: float, amount: float) -> None:
-        self.__threshold: float = float(threshold)
-        self.__amount: float = float(amount)
+        threshold = float(threshold)
+        amount = float(amount)
+        if threshold < 0:
+            raise ValueError("Threshold cannot be negative.")
+        if amount < 0:
+            raise ValueError("Discount amount cannot be negative.")
+        if amount > threshold:
+            # otherwise a total of exactly `threshold` would go negative
+            raise ValueError(
+                "Discount amount cannot exceed the threshold."
+            )
+        self.__threshold: float = threshold
+        self.__amount: float = amount
 
     def get_threshold(self) -> float:
         return self.__threshold
@@ -45,6 +69,7 @@ class BulkDiscount(DiscountStrategy):
         if total >= self.__threshold:
             return total - self.__amount
         return total
+
 
 class StudentDiscount(DiscountStrategy):
     """Fixed 5% student discount. Requires a non-empty student ID."""

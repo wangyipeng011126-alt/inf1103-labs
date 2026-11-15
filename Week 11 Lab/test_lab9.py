@@ -150,8 +150,100 @@ def test_product_factory() -> None:
     )
     assert isinstance(upper, DigitalProduct)
 
+def test_validation() -> None:
+    """Lab 9 Section 4 — each class validates its own rules."""
+    print("\n--- Lab 9 Section 4: Validation ---")
+    supplier = Supplier("SUP-001", "Acme Supplies", "sales@acme.com")
+
+    # price must be greater than zero (strictly)
+    for bad_price in (0, -1, -0.01):
+        try:
+            PhysicalProduct("P1", "X", bad_price, 1, 1.0, supplier)
+            assert False, f"price {bad_price} should be rejected"
+        except ValueError as error:
+            assert "Price" in str(error)
+    print("  price > 0 enforced")
+
+    # stock cannot be negative; zero is allowed
+    try:
+        DigitalProduct("P2", "X", 1.0, -1, 1.0, supplier)
+        assert False, "negative stock should be rejected"
+    except ValueError as error:
+        assert "Stock" in str(error)
+    assert PhysicalProduct("P3", "X", 1.0, 0, 1.0, supplier).get_stock() == 0
+    print("  stock >= 0 enforced")
+
+    # update_stock owns the same rule
+    item = PhysicalProduct("P4", "Widget", 10.0, 5, 1.0, supplier)
+    try:
+        item.update_stock(-5)
+        assert False, "negative update should be rejected"
+    except ValueError as error:
+        assert "Stock" in str(error)
+    item.update_stock(7)
+    assert item.get_stock() == 7
+    print("  update_stock(-5) rejected, update_stock(7) accepted")
+
+    # OrderLine owns its quantity rule; Order inherits the protection
+    laptop = PhysicalProduct("P5", "Laptop", 1200.0, 10, 2.5, supplier)
+    for bad_qty in (0, -1):
+        try:
+            OrderLine(laptop, bad_qty)
+            assert False, f"quantity {bad_qty} should be rejected"
+        except ValueError as error:
+            assert "Quantity" in str(error)
+
+    order = Order("ORD-V")
+    try:
+        order.add_order_line(laptop, 0)
+        assert False, "Order must not accept a zero-quantity line"
+    except ValueError:
+        pass
+    assert order.order_lines == []          # nothing half-added
+    print("  quantity > 0 enforced (incl. through Order)")
+
+    # subclass-specific rules
+    try:
+        PhysicalProduct("P6", "X", 1.0, 1, -0.5, supplier)
+        assert False, "negative weight should be rejected"
+    except ValueError as error:
+        assert "Weight" in str(error)
+    try:
+        DigitalProduct("P7", "X", 1.0, 1, -1.0, supplier)
+        assert False, "negative download size should be rejected"
+    except ValueError as error:
+        assert "Download size" in str(error)
+    try:
+        SubscriptionProduct("P8", "X", 1.0, 1, "weekly", supplier)
+        assert False, "invalid billing period should be rejected"
+    except ValueError as error:
+        assert "Billing period" in str(error)
+    print("  subclass rules enforced")
+
+    # LSP: a subclass cannot bypass the inherited price rule
+    try:
+        DigitalProduct("P9", "X", -5.0, 1, 1.0, supplier)
+        assert False, "DigitalProduct must still reject negative price"
+    except ValueError as error:
+        assert "Price" in str(error)
+    print("  LSP: subclass still enforces inherited price rule")
+
+    # discount strategies validate their own parameters
+    for bad in (-1, 101):
+        try:
+            PercentageDiscount(bad)
+            assert False, f"percentage {bad} should be rejected"
+        except ValueError as error:
+            assert "Percentage" in str(error)
+    try:
+        BulkDiscount(100, 200)
+        assert False, "amount > threshold should be rejected"
+    except ValueError as error:
+        assert "exceed" in str(error)
+    print("  discount parameter rules enforced")
 
 if __name__ == "__main__":
     test_strategy_discounts()
     test_product_factory()
+    test_validation()
     print("\nALL CHECKS PASSED")

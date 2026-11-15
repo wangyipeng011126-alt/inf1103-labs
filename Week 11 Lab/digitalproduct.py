@@ -6,7 +6,10 @@ class DigitalProduct(Product):
     def __init__(self, product_id: str, name: str, price: float,
                  stock: int, download_size: float, supplier: Supplier) -> None:
         super().__init__(product_id, name, price, stock, supplier)
-        self.__download_size: float = float(download_size)
+        download_size = float(download_size)
+        if download_size < 0:
+            raise ValueError("Download size cannot be negative.")
+        self.__download_size: float = download_size
 
     def get_download_size(self) -> float:
         return self.__download_size
@@ -23,3 +26,4 @@ class DigitalProduct(Product):
         data["type"] = "digital"
         data["download_size"] = self.__download_size
         return data
+

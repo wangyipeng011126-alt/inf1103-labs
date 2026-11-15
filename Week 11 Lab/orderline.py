@@ -6,10 +6,11 @@ class OrderLine:
     Product (association) but does NOT own it — the Product exists independently."""
 
     def __init__(self, product: Product, quantity: int) -> None:
+        quantity = int(quantity)
         if quantity <= 0:
-            raise ValueError("Quantity must be a positive integer.")
+            raise ValueError("Quantity must be greater than zero.")
         self.__product: Product = product
-        self.__quantity: int = int(quantity)
+        self.__quantity: int = quantity
 
     def calculate_subtotal(self) -> float:
         return self.__product.get_price() * self.__quantity

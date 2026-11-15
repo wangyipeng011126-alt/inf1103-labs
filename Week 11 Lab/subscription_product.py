@@ -6,6 +6,11 @@ class SubscriptionProduct(Product):
     def __init__(self, product_id: str, name: str, price: float,
                  stock: int, billing_period: str, supplier: Supplier) -> None:
         super().__init__(product_id, name, price, stock, supplier)
+        billing_period = billing_period.strip().lower()
+        if billing_period not in ("monthly", "yearly"):
+            raise ValueError(
+                "Billing period must be 'monthly' or 'yearly'."
+            )
         self.__billing_period: str = billing_period
 
     def get_billing_period(self) -> str:

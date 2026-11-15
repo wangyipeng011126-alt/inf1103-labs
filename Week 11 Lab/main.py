@@ -48,25 +48,18 @@ def load_inventory() -> Inventory:
 
         for item in data:
             supplier = resolve_supplier(item.get("supplier"))
-            product_type = item.get("type")
 
-            if product_type == "physical":
-                product = PhysicalProduct(
+            try:
+                product = ProductFactory.create(
+                    item["type"],
                     item["product_id"], item["name"], item["price"],
-                    item["stock"], item["weight"], supplier,
+                    item["stock"], supplier,
+                    weight=item.get("weight"),
+                    download_size=item.get("download_size"),
+                    billing_period=item.get("billing_period"),
                 )
-            elif product_type == "digital":
-                product = DigitalProduct(
-                    item["product_id"], item["name"], item["price"],
-                    item["stock"], item["download_size"], supplier,
-                )
-            elif product_type == "subscription":
-                product = SubscriptionProduct(
-                    item["product_id"], item["name"], item["price"],
-                    item["stock"], item["billing_period"], supplier,
-                )
-            else:
-                print(f"⚠️  Skipping unknown product type: {product_type!r}")
+            except ValueError as error:
+                print(f"⚠️  Skipping product: {error}")
                 continue
 
             inventory.add_product(product)
@@ -113,22 +106,17 @@ def main() -> None:
 
         elif option == "2":
             print("Add New Product")
-            product_id = input("Product ID: ")
-            name = input("Product Name: ")
+            product_id = input("Product ID: ").strip()
+            name = input("Product Name: ").strip()
 
             try:
                 price = float(input("Price: "))
                 stock = int(input("Stock Quantity: "))
 
-                if price < 0 or stock < 0:
-                    print("Error: Price and stock cannot be negative.")
-                    continue
-
                 product_type = (
                     input("Product type (physical/digital/subscription): ")
                     .strip().lower()
                 )
-
                 if product_type not in ("physical", "digital", "subscription"):
                     print("Error: Invalid product type.")
                     continue
@@ -137,61 +125,48 @@ def main() -> None:
 
                 type_specific: dict = {}
                 if product_type == "physical":
-                    weight = float(input("Weight (kg): "))
-                    if weight < 0:
-                        print("Error: Weight cannot be negative.")
-                        continue
-                    type_specific["weight"] = weight
+                    type_specific["weight"] = float(input("Weight (kg): "))
                 elif product_type == "digital":
-                    download_size = float(input("Download size (MB): "))
-                    if download_size < 0:
-                        print("Error: Download size cannot be negative.")
-                        continue
-                    type_specific["download_size"] = download_size
-                else:  # subscription
-                    billing_period = (
+                    type_specific["download_size"] = float(
+                        input("Download size (MB): ")
+                    )
+                else:
+                    type_specific["billing_period"] = (
                         input("Billing period (monthly/yearly): ")
                         .strip().lower()
                     )
-                    if billing_period not in ("monthly", "yearly"):
-                        print("Error: Billing period must be "
-                              "'monthly' or 'yearly'.")
-                        continue
-                    type_specific["billing_period"] = billing_period
 
                 product = ProductFactory.create(
                     product_type, product_id, name, price, stock, supplier,
                     **type_specific,
                 )
 
-                if inventory.add_product(product):
-                    print("Product added successfully!")
-                else:
-                    print("Error: Product ID already exists.")
+            except ValueError as error:
+                print(f"Error: {error}")
+                continue
 
-            except ValueError:
-                print("Error: Please enter valid numeric values.")
+            if inventory.add_product(product):
+                print("Product added successfully!")
+            else:
+                print("Error: Product ID already exists.")
 
         elif option == "3":
             print("Update Stock")
-            product_id = input("Enter Product ID: ")
+            product_id = input("Enter Product ID: ").strip()
             product = inventory.search_product(product_id)
 
-            if product:
-                print("Product Found!")
-                print(f"Name: {product.get_name()}")
-                print(f"Current Stock: {product.get_stock()}")
-                try:
-                    new_stock = int(input("New Stock Quantity: "))
-                    if new_stock < 0:
-                        print("Error: Stock cannot be negative.")
-                    else:
-                        product.update_stock(new_stock)
-                        print("Stock updated successfully!")
-                except ValueError:
-                    print("Error: Please enter a valid stock quantity.")
-            else:
+            if product is None:
                 print("Product not found.")
+                continue
+
+            print("Product Found!")
+            print(f"Name: {product.get_name()}")
+            print(f"Current Stock: {product.get_stock()}")
+            try:
+                product.update_stock(int(input("New Stock Quantity: ")))
+                print("Stock updated successfully!")
+            except ValueError as error:
+                print(f"Error: {error}")
 
         elif option == "4":
             print("Search Product")
