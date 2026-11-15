@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+.git/
+screenshot.docx
+UML Diagram.png
+log.txt
+Common Git Command.txt
